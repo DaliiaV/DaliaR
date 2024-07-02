@@ -1,7 +1,7 @@
 ```{r}
 library(shiny)
 
-filename <- 'C:\\pic R\\delivery.jpg'
+filename <- 'pic R/delivery.jpeg'
 
 # Функция расчета времени и стоимости доставки
 shipment_scoring <- function(distance, weight, length, width, height, risk, type, loyalty) {
