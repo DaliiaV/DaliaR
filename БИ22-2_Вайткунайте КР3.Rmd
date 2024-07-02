@@ -1,0 +1,193 @@
+```{r}
+library(shiny)
+
+filename <- 'C:\\pic R\\delivery.jpg'
+
+# Функция расчета времени и стоимости доставки
+shipment_scoring <- function(distance, weight, length, width, height, risk, type, loyalty) {
+  
+  distance_price <- ifelse(distance > '100', min(distance * 2, 300), 100)
+  
+  weight_price <- ifelse(weight > '1000', min(weight * 0.3, 200), 100)
+  
+  value_price <- length * width * height /1000
+  
+  risk_price <- switch(risk,
+                       "низкий" = 0,
+                       "средний" = 160,
+                       "высокий" = 550)
+
+  type_price <- ifelse(type == "до дома", 400, 0)
+  
+  loyalty_price <- -200 * as.numeric(loyalty)
+
+  # Общая сумма 
+  total_price <- distance_price+weight_price+value_price+risk_price+type_price+loyalty_price
+  time_shipment <- ifelse(distance > '100', min(distance /100, 2), 1)
+  return(list(total_price = total_price, time_shipment = time_shipment))
+ 
+}
+
+# Основной код приложения
+ui <- fluidPage(
+  # Заголовок приложения
+  titlePanel("Расчет стоимости и времени доставки"),
+
+  tags$br(),
+  
+  # Ввод данных
+  fluidRow(
+    column(width = 4, 
+           textInput(
+             inputId = "point_A", 
+             label = "Город отправления", 
+             value = "Москва")
+           ),
+    column(width = 4, 
+           textInput(
+             inputId = "point_B", 
+             label = "Город доставки", 
+             value = "Санкт-Петербург")
+           ),
+    column(width = 4,
+      numericInput(
+        inputId = "distance", 
+        label = "Расстояние, км", 
+        value = 100)
+    )
+  ),
+  
+  fluidRow(
+    column(width = 5,
+        imageOutput(
+          outputId = 'pic',
+          height = '200px', 
+          width = '500px') 
+           ),
+    column(width = 6, 
+      sliderInput(
+        inputId = "weight", 
+        label = "Вес, г",
+        min = 100,
+        max = 100000,
+        value = 3000)
+          ),
+    column(width = 6, 
+      sliderInput(
+        inputId = "length", 
+        label = "Длина, см",
+        min = 0,
+        max = 300,
+        value = 30)
+          ),
+    column(width = 6, 
+      sliderInput(
+        inputId = "width", 
+        label = "Ширина, см",
+        min = 0,
+        max = 300,
+        value = 30)
+          ),
+    column(width = 6, 
+      sliderInput(
+        inputId = "height", 
+        label = "Высота, см",
+        min = 0,
+        max = 300,
+        value = 30)
+          )
+    
+  ),
+  
+  fluidRow(
+    column(width = 4,
+      radioButtons(
+        inputId = "risk", 
+        label = "Уровень хрупкости посылки", 
+        choices = c("низкий", "средний", "высокий"))
+    ),
+    column(width = 5,
+      selectInput(
+        inputId = "type", 
+        label = "Тип доставки", 
+        choices = c("до пункта выдачи", "до дома"))
+    )
+  ),
+  
+  
+  # Ввод данных о карте лояльности
+  fluidRow(
+    column(width = 5,
+      checkboxInput(
+        inputId = "loyalty", 
+        label = "Карта лояльности", 
+        value = FALSE)
+    ),
+  
+  ),
+  
+  # Ввод доп данных  
+  fluidRow(
+    column(width = 2,
+      textAreaInput(
+        inputId = "comment", 
+        label = "Доп комментарии", 
+        value = "Введите текст")
+           )
+   
+  ),
+  
+  tags$br(),
+  
+  
+  # Вывод результатов расчета
+  fluidRow(
+    column(6, textOutput("total_price")),
+  ),
+  fluidRow(
+    column(6, actionButton(inputId = "button", label = "Рассчитать время"))
+  ),
+)
+
+server <- function(input, output, session) {
+  
+  output$pic <- renderImage({
+      list(
+        src=filename,
+        width='50%',
+        heigth='120%'
+      )
+    },
+    deleteFile = FALSE
+  )
+
+  # Расчет баллов
+  score <- reactive({
+    shipment_scoring(
+      distance=input$distance, 
+      weight=input$weight, 
+      length=input$length, 
+      width=input$width, 
+      height=input$height, 
+      risk=input$risk, 
+      type=input$type, 
+      loyalty=input$loyalty
+    )
+   
+  })
+
+  # Вывод результатов расчета
+  output$total_price <- renderText(expr = {
+    paste0('Результат = ', score()$total_price)
+  })
+  ttime <- eventReactive(input$button, {
+    time_shipment})
+  output$ttime <- renderText({
+    ttime()
+  })
+
+}
+# основная функция запускающая приложение
+shinyApp (ui = ui, server = server)  
+  
+```
